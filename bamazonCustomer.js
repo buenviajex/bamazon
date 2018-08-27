@@ -29,10 +29,10 @@ connection.connect(function(err) {
   // prompt for info about the item being put up for auction
 
 function products() {
+  console.log("\n----------WELCOME TO BAMAZON!!!----------");
+ 
   connection.query('SELECT * FROM products', function (err, res) {
     if (err) throw err;
-
-    console.log("\n----------WELCOME TO BAMAZON!!!----------");
 
     for (var i = 0; i < res.length; i++) {
       console.log(
@@ -46,13 +46,9 @@ function products() {
     }
     start();
   });
-  
 }
 
-
 function start() {
-  connection.query('SELECT * FROM products', function (err, res) {
-    if (err) throw err;
   inquirer
     .prompt([
       {
@@ -66,64 +62,31 @@ function start() {
         message: "How many units of this product would you like to purchase?"
       },
     ]).then(function(answer) {
-      console.log("------------------");
-      var query = connection.query("SELECT * FROM products WHERE ?", [{
-        item_id: answer
-      }] (err,res) )
-      var totalStock = res[i].stock_quantity;
-      var howMany = answer.units;
-      if (totalStock >= howMany) {
-        console.log("Looks like we have that item available! \nThanks for your purchase!");
-        console.log(totalStock);
+      var item = answer.selectID;
+      var units = answer.units;
+      console.log("Let me check that for you!");
+
+      checkStock(item, units);
+    })
+  }
+
+  function checkStock (item, units) {
+    connection.query('SELECT * FROM products WHERE item_id = ?', item, function (err, res) {
+      if (err) throw err;
+      var res = res[0];
+      if(units > res.stock_quantity) {
+        console.log("That item is currently unavailable.")
       } else {
-        console.log("Insufficient Quanitity")
+        console.log("Great choice! Your total comes out to: $" + (res.price * units));
+        updateStock(id, res.stock_quantity, units);
       }
-      
     }
-  )}
-  )}
+  )};
+  
+  function updateStock(item, stock, units) {
+    var updateStock = stock - units;
+    connection.query("UPDATE products SET stock_quantity = ? WHERE item_id = ?", [updateStock, item], function(err) {
+      if(err) throw err;
+    })
 
-
-
-
-
-  //     var answer = "SELECT * FROM products WHERE ?";
-  //     connection.query(answer, {
-  //       id: answers.
-  //     })
-  //       // get the information of the chosen item
-       
-  //       for (var i = 0; i < results.length; i++) {
-  //         if (results[i].item_name === answer.choice) {
-  //           chosenItem = results[i];
-  //         }
-  //       }
-
-  //       // determine if bid was high enough
-  //       if (chosenItem.highest_bid < parseInt(answer.bid)) {
-  //         // bid was high enough, so update db, let the user know, and start over
-  //         connection.query(
-  //           "UPDATE auctions SET ? WHERE ?",
-  //           [
-  //             {
-  //               highest_bid: answer.bid
-  //             },
-  //             {
-  //               id: chosenItem.id
-  //             }
-  //           ],
-  //           function(error) {
-  //             if (error) throw err;
-  //             console.log("Bid placed successfully!");
-  //             start();
-  //           }
-  //         );
-  //       }
-  //       else {
-  //         // bid wasn't high enough, so apologize and start over
-  //         console.log("Insufficient quantity!");
-  //         start();
-  //       }
-  //     });
-  // };
-
+  }
